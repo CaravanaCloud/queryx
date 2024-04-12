@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: QueryX SAM Template
+
+Globals:
+  Api:
+    EndpointConfiguration: REGIONAL
+    BinaryMediaTypes:
+      - "*/*"
+
+Parameters:
+  SecretId:
+    Type: String
+  JDBCURL:
+    Type: String
+  Queries64:
+    Type: String
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+
+Resources:
+  QueryxFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+      Runtime: java21
+      CodeUri: target/function.zip
+      MemorySize: 512
+      Timeout: 60
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - AWSLambdaVPCAccessExecutionRole
+        - AdministratorAccess
+      VpcConfig:
+        SecurityGroupIds: !Ref SecurityGroupIds
+        SubnetIds: !Ref SubnetIds
+
+      Environment:
+        Variables:
+          QX_SECRET_ID: !Ref SecretId
+          QX_QUERIES64: !Ref Queries64
+          QX_JDBC_URL: !Ref JDBCURL
+Outputs:
+  QueryxFnARN:
+    Description: "QueryX Function ARN"
+    Value:
+      Fn::GetAtt:
+        - QueryxFn
+        - Arn

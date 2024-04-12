@@ -1,0 +1,7 @@
+{
+  "queries": [
+    "select 1+1 as result1",
+    "select 2+2 as result2",
+    "select 3+3 as result3"
+  ]
+}

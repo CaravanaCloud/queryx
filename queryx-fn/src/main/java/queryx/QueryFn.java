@@ -44,12 +44,10 @@ public class QueryFn implements RequestHandler<Map<String,Object>, Map<String,St
     public Map<String, String> handleRequest(Map<String, Object> input, Context context) {
         try {
             Log.info("Query invocation requested");
-            Log.info(input);
-            var queries = input.get("queries");
-            if (queries != null) {
-                Log.infof("Input queries [%s]: %s", queries.getClass().getName(), queries.toString());
-            }
-            var data = executeQueries();
+            // Log.info(input);
+            var queriesParam = input.get("queries");
+            var queries = resolveQueries(queriesParam);
+            var data = executeQueries(queries);
             var result = Map.of(
                     "data", data.toString(),
                     "status","ok");
@@ -61,8 +59,20 @@ public class QueryFn implements RequestHandler<Map<String,Object>, Map<String,St
         }
     }
 
-    private String executeQueries() throws JsonProcessingException {
-        var queries = decodeQueries();
+    private List<String> resolveQueries(Object queriesParam) {
+        var queries = new ArrayList<String>();
+        var queriesCfg = decodeQueries();
+        queries.addAll(queriesCfg);
+        if (queriesParam instanceof String) {
+            queries.add((String) queriesParam);
+        } else if (queriesParam instanceof List) {
+            queries.addAll((List<String>) queriesParam);
+        }
+        return queries;
+    }
+
+    private String executeQueries(List<String> queries) throws JsonProcessingException {
+        Log.infof("Executing [%s] queries", queries.size());
         List<List<Map<String,String>>> results = new ArrayList<>();
         queries.forEach(query -> {
             try {
@@ -105,23 +115,22 @@ public class QueryFn implements RequestHandler<Map<String,Object>, Map<String,St
         List<Map<String,String>> rows = new ArrayList<>();
         ResultSetMetaData rsmd = rs.getMetaData();
         int columnCount = rsmd.getColumnCount();
-        for (int i = 1; i <= columnCount; ++i) {
-            var name = rsmd.getColumnName(i);
-            var type = rsmd.getColumnType(i);
-            columns.put(name, type);
-        }
-
         while (rs.next()) {
             Map<String, String> row = new HashMap<>();
-            for (var entry : columns.entrySet()) {
-                var name = entry.getKey();
-                var type = entry.getValue();
+            for (int i = 1; i <= columnCount; ++i) {
+                var label = rsmd.getColumnLabel(i);
+                var type = rsmd.getColumnType(i);
                 var value = switch (type) {
-                    case Types.INTEGER -> String.valueOf(rs.getInt(name));
-                    case Types.VARCHAR -> rs.getString(name);
-                    default -> rs.getString(name);
+                    case Types.INTEGER -> String.valueOf(rs.getInt(i));
+                    case Types.VARCHAR -> rs.getString(i);
+                    case Types.BIT -> rs.getBoolean(i) ? "1" : "0";
+                    case Types.TIMESTAMP -> rs.getTimestamp(i).toString();
+                    case Types.DATE -> rs.getDate(i).toString();
+                    case Types.TIME -> rs.getTime(i).toString();
+                    case Types.OTHER -> rs.getObject(i).toString();
+                    default -> rs.getString(i);
                 };
-                row.put(name, value);
+                row.put(label, value);
             }
             rows.add(row);
         }

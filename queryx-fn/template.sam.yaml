@@ -19,6 +19,12 @@ Parameters:
     Type: List<AWS::EC2::SecurityGroup::Id>
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
+  MemorySize:
+    Type: Number
+    Default: 256
+  Timeout:
+    Type: Number
+    Default: 30
 
 Resources:
   QueryxFn:
@@ -27,12 +33,12 @@ Resources:
       Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
       Runtime: java21
       CodeUri: target/function.zip
-      MemorySize: 512
-      Timeout: 60
+      MemorySize: !Ref MemorySize
+      Timeout: !Ref Timeout
       Policies:
         - AWSLambdaBasicExecutionRole
         - AWSLambdaVPCAccessExecutionRole
-        - AdministratorAccess
+        # - AdministratorAccess
       VpcConfig:
         SecurityGroupIds: !Ref SecurityGroupIds
         SubnetIds: !Ref SubnetIds

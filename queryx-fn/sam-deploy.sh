@@ -1,12 +1,14 @@
 #!/bin/bash
 
-StackName="queryx-fn"
-SecretId="arn:aws:secretsmanager:us-east-1:932529686876:secret:rds!cluster-c2c4ea32-10d9-4f83-8da4-62be31ec8186-AjNX1X"
-JDBCURL="jdbc:postgresql://tf-2024041210325356990000000a.cluster-c9vpztgbbztw.us-east-1.rds.amazonaws.com/sqldb"
-Queries="SELECT 2+2"
-Queries64=$(echo -n $Queries | base64)
-SecurityGroupIds="sg-0623b36abfba1ff90"
-SubnetIds="subnet-0543dda2264e0092d"
+echo "StackName=$StackName"
+echo "SecretId=$SecretId"
+echo "JDBCURL=$JDBCURL"
+echo "Queries64=$Queries64"
+echo "SecurityGroupIds=$SecurityGroupIds"
+echo "SubnetIds=$SubnetIds"
+
+aws sts get-caller-identity
+sleep 15
 
 sam deploy --template-file template.sam.yaml \
   --stack-name $StackName \
